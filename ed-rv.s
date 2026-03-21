@@ -17,7 +17,7 @@ main:
 	addi a7, zero, 64
 	addi a0, zero, 1 #stdout
 	la a1, welcome
-	addi a2, zero, 19 # bytes
+	addi a2, zero, 43 # bytes
 	ecall
 
 	# open syscall, used to open buffer as file.
@@ -27,6 +27,21 @@ main:
 	addi a2, zero, O_CREAT|O_RDWR # flags
 	addi a3, zero,  S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH # mode
 	ecall
+
+	# main loop
+	loop:
+		# Read syscall
+		addi a7, zero, 63
+		addi a0, zero, 0 #stdin
+		la	 a1, input_buffer
+		addi a2, zero, 8
+		ecall
+
+		# chech first character of read string
+		lb t0, 0(a1)
+		addi t1, zero, 113
+		bne t0, t1, loop # if t0 != 'q': loop
+
 
 	# close syscall
 	addi a7, zero, 57
@@ -44,8 +59,9 @@ _start:
 	j main
 
 .data
+.align 3 # = 2^3 = 8 byte alignemnt, reccomended for RV64, apparently
 welcome:
-	.ascii "Welcome to ed-rv!\n\0"
+	.ascii "Welcome to ed-rv! Press q<Enter> to quit.\n\0"
 hello:
 	.ascii "myfile\0"
-
+input_buffer: .space 8
