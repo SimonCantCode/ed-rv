@@ -23,7 +23,18 @@ main:
 	# open syscall, used to open buffer as file.
 	addi a7, zero, 56
 	addi a0, zero, AT_FDCWD # dirfd
-	la a1, hello # path
+
+	# check if argv[1] empty <=> argc < 2
+	ld t0, 0(sp) # argc
+	addi t1, zero, 2
+	bltu t0, t1, newfile # if argc < (unsigned) 2: j newfile
+
+	ld a1, 16(sp) # set filename to argv[1]
+	j newfile_end
+	newfile:
+		la a1, buffer_path # path
+	newfile_end:
+
 	addi a2, zero, O_CREAT|O_RDWR # flags
 	addi a3, zero,  S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH # mode
 	ecall
@@ -41,7 +52,7 @@ main:
 		lb t0, 0(a1)
 		addi t1, zero, 113
 		bne t0, t1, loop # if t0 != 'q': loop
-
+		#TODO use s1 to indicate if it has a filename or not or something
 
 	# close syscall
 	addi a7, zero, 57
@@ -62,6 +73,6 @@ _start:
 .align 3 # = 2^3 = 8 byte alignemnt, reccomended for RV64, apparently
 welcome:
 	.ascii "Welcome to ed-rv! Press q<Enter> to quit.\n\0"
-hello:
-	.ascii "myfile\0"
+buffer_path: #TODO change to /tmp/ed-rv_buff
+	.ascii "ed-rv_buff\0"
 input_buffer: .space 8
