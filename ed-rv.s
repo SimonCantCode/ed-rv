@@ -9,6 +9,9 @@
 .equ S_IRGRP, 00040 #group has read permission
 .equ S_IROTH, 00004 #others have read permission
 
+# s1 will only be used to check for unwritten changes
+#.set unwritten_changes, s1 # WHY NO WORK
+
 .text
 .global _start
 
@@ -20,7 +23,7 @@ main:
 	addi a2, zero, 43 # bytes
 	ecall
 
-	# open syscall, used to open buffer as file.
+	# (begining of) open syscall, used to open buffer as file.
 	addi a7, zero, 56
 	addi a0, zero, AT_FDCWD # dirfd
 
@@ -28,19 +31,22 @@ main:
 	ld t0, 0(sp) # argc
 	addi t1, zero, 2
 	bltu t0, t1, newfile # if argc < (unsigned) 2: j newfile
-
-	ld a1, 16(sp) # set filename to argv[1]
-	j newfile_end
+		ld a1, 16(sp) # set filename to argv[1]
+		j newfile_end
 	newfile:
 		la a1, buffer_path # path
 	newfile_end:
 
+	# continuation of open syscall
 	addi a2, zero, O_CREAT|O_RDWR # flags
-	addi a3, zero,  S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH # mode
+	addi a3, zero,  S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH # mode, eg, file permissions if creating new file.
 	ecall
 
-	# main loop
-	loop:
+	#save returned file descriptor
+	addi s2, a0, 0
+
+	# main normal_loop
+	normal_loop:
 		# Read syscall
 		addi a7, zero, 63
 		addi a0, zero, 0 #stdin
@@ -50,13 +56,38 @@ main:
 
 		# chech first character of read string
 		lb t0, 0(a1)
-		addi t1, zero, 113
-		bne t0, t1, loop # if t0 != 'q': loop
-		#TODO use s1 to indicate if it has a filename or not or something
+		addi t1, zero, 113 # 'q'
+		addi t2, zero, 64 # '@'
+		
+		# If print file command
+		bne t0, t2, skip_print
+			### Read 8 bytes from file test
+			addi a7, zero, 63
+			addi a0, s2, 0
+			la	 a1, input_buffer
+			addi a2, zero, 8
+			ecall
+
+			# print what was read 
+			addi a7, zero, 64
+			addi a0, zero, 1 #stdout
+			#la a1, welco
+			addi a2, zero, 8 # bytes
+			ecall
+		skip_print:
+
+		bne t0, t1, normal_loop # if t0 != 'q': normal_loop
+
+	# Checks for unwritten changes
+	#bnez unwritten_changes, normal_loop # WHY NO WORK
+	beqz s1, break # s1 = unwritten_changes (true/false)
+		#TODO print error meassage here
+		j normal_loop
+	break:
 
 	# close syscall
 	addi a7, zero, 57
-	# add a0, zero, a0 # file descriptor returned from open() in a0 already
+	add a0, s2, 0 # file descriptor returned from open()
 	ecall
 
 	# exit syscall
