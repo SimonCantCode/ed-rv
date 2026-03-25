@@ -10,4 +10,4 @@ Compile with ```make```, run with ```qemu-riscv64 ed-rv```.
 
 ## Commands
 * ```q``` to quit
-* ```@``` to print (8 bytes) of file contents
+* ```@``` to print (255 bytes) of file contents
