@@ -11,3 +11,6 @@ Compile with ```make```, run with ```qemu-riscv64 ed-rv```.
 ## Commands
 * ```q``` to quit
 * ```@``` to print (255 bytes) of file contents
+
+## Resources used
+[RISC-V Linux syscall table](https://jborza.com/post/2021-05-11-riscv-linux-syscalls/)
