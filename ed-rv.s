@@ -1,16 +1,5 @@
-# flags for open()
-.equ AT_FDCWD, -100
-.equ O_RDWR, 2
-.equ O_CREAT, 64
-
-# flag for lseek
-.equ SEEK_SET, 0 # "The file offset is set to offset bytes."
-
-# file permissions
-.equ S_IRUSR, 00400 #user has read permission
-.equ S_IWUSR, 00200 #user has write permission
-.equ S_IRGRP, 00040 #group has read permission
-.equ S_IROTH, 00004 #others have read permission
+# Defined constants
+.include "constants.s"
 
 ### --- Register "defenitions" --- ###
 # s1 is always used to store the returned file descriptor number.
@@ -67,7 +56,7 @@ main:
 		addi t1, zero, 113 # 'q'
 		addi t2, zero, 64 # '@'
 		
-		# If print file command
+		# If print file command, this will be moved to a function
 		bne t0, t2, skip_print
 
 			# lseek syscall to read from begining of file
@@ -83,6 +72,16 @@ main:
 			la	 a1, read_buffer
 			addi a2, zero, 255
 			ecall
+
+			### loop to find newlines
+			# nl_loop:
+			# addi t0, zero, 0 # i
+			# lb t1, 0(a1) # could just subtract in the end to get number of itterations, idk
+			#
+			#
+			#
+			# addi a1, zero, 1
+			# addi t0, zero, 1
 
 			# print what was read 
 			addi a7, zero, 64
