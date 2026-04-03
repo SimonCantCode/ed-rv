@@ -1,6 +1,9 @@
 # Defined constants
 .include "constants.s"
 
+# For line numbers (doesnt work)
+.set LN_TEST, 0
+
 ### --- Register "defenitions" --- ###
 # s1 is always used to store the returned file descriptor number.
 # s2 is always used to check for unwritten changes. 1 for true 0 for false.
@@ -56,15 +59,48 @@ main:
 		addi a2, zero, 8
 		ecall
 
-		# chech first character of read string
+		# check first character of read string
 		lb t0, 0(a1)
+
+		#TODo js use the same register
 		addi t1, zero, 113 # 'q'
 		addi t2, zero, 64 # '@'
+		addi t3, zero, 48 # '0'
+		addi t4, zero, 99 # 'c'
 		
 		# If print file command
 		bne t0, t2, 1f
 			jal ra, print_file
 		1: # skip print
+
+		# if 0 command
+		bne t0, t3, 1f
+			# lseek syscall
+			addi a7, zero, 62
+			addi a0, s1, 0 # fd
+			addi a1, zero, 0 # bytes in
+			addi a2, zero, SEEK_SET
+			ecall
+		1:
+
+		# if c command
+		bne t0, t4, 1f
+			# read what to replace with
+			addi a7, zero, 63
+			addi a0, zero, 0 #stdin
+			la	 a1, input_buffer
+			addi a2, zero, 8
+			ecall
+
+			# lb t0, 0(a1)
+
+			#replace character with write syscall
+			addi a7, zero, 64
+			addi a0, s1, 0
+			# la a1, test
+			addi a2, zero, 1 # bytes
+			ecall
+		1:
 
 		bne t0, t1, normal_loop # if t0 != 'q': normal_loop
 
@@ -101,25 +137,45 @@ print_file:
 	addi a2, zero, 255
 	ecall
 
-	### loop to find newlines
-	# nl_loop:
-	# addi t0, zero, 0 # i
-	# lb t1, 0(a1) # could just subtract in the end to get number of itterations, idk
-	#
-	#
-	#
-	# addi a1, zero, 1
-	# addi t0, zero, 1
+	# save returned val
+	addi t5, a0, 0
+	addi t4, a1, 0 # save read buff
+
+	# Holy sphaghetti ill do ts later
+	.if LN_TEST
+	## loop to find newlines
+	addi t2, zero, 10 # newline
+	# new a1 in t3
+	addi t3, a1, 0
+	addi t0, zero, 0 # i  # could just subtract in the end to get number of itterations, idk
+	nl_loop:
+	lb t1, 0(t3)
+	#unsafe lol but eh
+
+	addi t3, t3, 1
+	addi t0, t0, 1
+
+	bne t1, t2, nl_loop
+
+	# print line number (placeholder)
+	addi a7, zero, 64
+	addi a0, zero, 1 #stdout
+	la a1, line_number
+	addi a2, zero, 7 # bytes
+	ecall
+	.else
+	addi t0, t5, 0
+	.endif
 
 	# print what was read 
 	addi a7, zero, 64
-	#la a1, welco #same buffer still in a1
-	addi a2, a0, 0 # print bytes read
+	addi a1, t4, 0 
+	addi a2, t0, 0 # print bytes read
 	addi a0, zero, 1 #stdout
 	ecall
 
 	# bytes read still in a2
-	bne a2, zero, 1b # print one more time if not at end of file (where a2 would be 0)
+	bne t5, zero, 1b # print one more time if not at end of file (where a2 would be 0)
 	ret
 
 .data
@@ -128,5 +184,9 @@ welcome:
 	.ascii "Welcome to ed-rv! Press q<Enter> to quit.\n\0"
 buffer_path: #TODO change to /tmp/ed-rv_buff
 	.ascii "ed-rv_buff\0"
+.if LN_TEST
+line_number: .ascii "ln:    \0"
+.endif
+test: .ascii "p"
 input_buffer: .space 8
 read_buffer: .space 255
