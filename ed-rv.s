@@ -93,6 +93,7 @@ print_file:
 	addi a2, zero, SEEK_SET
 	ecall
 
+	1:
 	### Read from file test
 	addi a7, zero, 63
 	addi a0, s1, 0
@@ -116,6 +117,9 @@ print_file:
 	addi a2, a0, 0 # print bytes read
 	addi a0, zero, 1 #stdout
 	ecall
+
+	# bytes read still in a2
+	bne a2, zero, 1b # print one more time if not at end of file (where a2 would be 0)
 	ret
 
 .data
