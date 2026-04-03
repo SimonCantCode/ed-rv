@@ -62,29 +62,28 @@ main:
 		# check first character of read string
 		lb t0, 0(a1)
 
-		#TODo js use the same register
-		addi t1, zero, 113 # 'q'
-		addi t2, zero, 64 # '@'
-		addi t3, zero, 48 # '0'
-		addi t4, zero, 99 # 'c'
-		
 		# If print file command
-		bne t0, t2, 1f
+		addi t1, zero, 64 # '@'
+		bne t0, t1, 1f
 			jal ra, print_file
+			j normal_loop
 		1: # skip print
 
 		# if 0 command
-		bne t0, t3, 1f
+		addi t1, zero, 48 # '0'
+		bne t0, t1, 1f
 			# lseek syscall
 			addi a7, zero, 62
 			addi a0, s1, 0 # fd
 			addi a1, zero, 0 # bytes in
 			addi a2, zero, SEEK_SET
 			ecall
+			j normal_loop
 		1:
 
 		# if c command
-		bne t0, t4, 1f
+		addi t1, zero, 99 # 'c'
+		bne t0, t1, 1f
 			# read what to replace with
 			addi a7, zero, 63
 			addi a0, zero, 0 #stdin
@@ -100,9 +99,20 @@ main:
 			# la a1, test
 			addi a2, zero, 1 # bytes
 			ecall
+			j normal_loop
 		1:
 
-		bne t0, t1, normal_loop # if t0 != 'q': normal_loop
+		# if not quit
+		addi t1, zero, 113 # 'q'
+		beq t0, t1, 1f
+			# print error
+			addi a7, zero, 64
+			addi a0, zero, 1 #stdout
+			la a1, error
+			addi a2, zero, 2 # bytes
+			ecall
+			j normal_loop
+		1:
 
 	# Checks for unwritten changes
 	beqz s2, break # s2 = unwritten_changes (true/false)
@@ -187,6 +197,7 @@ buffer_path: #TODO change to /tmp/ed-rv_buff
 .if LN_TEST
 line_number: .ascii "ln:    \0"
 .endif
+error: .ascii "?\n"
 test: .ascii "p"
 input_buffer: .space 8
 read_buffer: .space 255
