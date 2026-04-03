@@ -11,6 +11,11 @@
 .text
 .global _start
 
+_start:
+	# initialize global pointer
+	la gp, __global_pointer$ # name defined from default linker script
+	j main
+
 main:
 	# print welcome meassage
 	addi a7, zero, 64
@@ -56,40 +61,10 @@ main:
 		addi t1, zero, 113 # 'q'
 		addi t2, zero, 64 # '@'
 		
-		# If print file command, this will be moved to a function
-		bne t0, t2, skip_print
-
-			# lseek syscall to read from begining of file
-			addi a7, zero, 62
-			addi a0, s1, 0 # fd
-			addi a1, zero, 0 # bytes in (beginning)
-			addi a2, zero, SEEK_SET
-			ecall
-
-			### Read from file test
-			addi a7, zero, 63
-			addi a0, s1, 0
-			la	 a1, read_buffer
-			addi a2, zero, 255
-			ecall
-
-			### loop to find newlines
-			# nl_loop:
-			# addi t0, zero, 0 # i
-			# lb t1, 0(a1) # could just subtract in the end to get number of itterations, idk
-			#
-			#
-			#
-			# addi a1, zero, 1
-			# addi t0, zero, 1
-
-			# print what was read 
-			addi a7, zero, 64
-			#la a1, welco #same buffer still in a1
-			addi a2, a0, 0 # print bytes read
-			addi a0, zero, 1 #stdout
-			ecall
-		skip_print:
+		# If print file command
+		bne t0, t2, 1f
+			jal ra, print_file
+		1: # skip print
 
 		bne t0, t1, normal_loop # if t0 != 'q': normal_loop
 
@@ -109,10 +84,39 @@ main:
 	# add a0, zero, a0
 	ecall
 
-_start:
-	# initialize global pointer
-	la gp, __global_pointer$ # name defined from default linker script
-	j main
+# Functions moved out to reduce clutter
+print_file:
+	# lseek syscall to read from begining of file
+	addi a7, zero, 62
+	addi a0, s1, 0 # fd
+	addi a1, zero, 0 # bytes in (beginning)
+	addi a2, zero, SEEK_SET
+	ecall
+
+	### Read from file test
+	addi a7, zero, 63
+	addi a0, s1, 0
+	la	 a1, read_buffer
+	addi a2, zero, 255
+	ecall
+
+	### loop to find newlines
+	# nl_loop:
+	# addi t0, zero, 0 # i
+	# lb t1, 0(a1) # could just subtract in the end to get number of itterations, idk
+	#
+	#
+	#
+	# addi a1, zero, 1
+	# addi t0, zero, 1
+
+	# print what was read 
+	addi a7, zero, 64
+	#la a1, welco #same buffer still in a1
+	addi a2, a0, 0 # print bytes read
+	addi a0, zero, 1 #stdout
+	ecall
+	ret
 
 .data
 .align 3 # = 2^3 = 8 byte alignemnt, reccomended for RV64, apparently
