@@ -11,6 +11,8 @@ Compile with ```make```, run with ```qemu-riscv64 ed-rv```.
 ## Commands
 * ```q``` to quit
 * ```@``` to print entire file contents
+* ```0``` to go to the first byte in the file with lseek
+* ```c``` to replace a character one at a time
 
 ## Resources used
 [RISC-V Linux syscall table](https://jborza.com/post/2021-05-11-riscv-linux-syscalls/)
